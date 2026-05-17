@@ -1,0 +1,6 @@
+name: BoneCane
+version: '${project.version}'
+main: io.github.faboit1.bonecane.BoneCane
+api-version: '1.21'
+description: Allows bonemeal to grow sugar cane and cactus
+author: Faboit1
