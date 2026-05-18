@@ -1,6 +1,7 @@
 package io.github.faboit1.bonecane.listener;
 
 import io.github.faboit1.bonecane.util.GrowthUtil;
+import io.github.faboit1.bonecane.util.GrowthUtil.GrowthResult;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -39,10 +40,13 @@ public final class PlayerInteractListener implements Listener {
         // Only the bottom block may be bonemealed.
         if (!GrowthUtil.isBottomBlock(block)) return;
 
-        if (GrowthUtil.tryGrow(block)) {
+        GrowthResult result = GrowthUtil.tryGrow(block);
+        if (result != GrowthResult.SKIPPED) {
             Player player = event.getPlayer();
             consumeBonemeal(player, item);
-            GrowthUtil.playBonemealEffect(block);
+            if (result == GrowthResult.GREW) {
+                GrowthUtil.playBonemealEffect(block);
+            }
         }
     }
 

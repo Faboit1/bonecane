@@ -1,6 +1,8 @@
 package io.github.faboit1.bonecane.listener;
 
+import io.github.faboit1.bonecane.BoneCane;
 import io.github.faboit1.bonecane.util.GrowthUtil;
+import io.github.faboit1.bonecane.util.GrowthUtil.GrowthResult;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Dispenser;
@@ -16,6 +18,12 @@ import org.bukkit.inventory.ItemStack;
  * Handles dispenser-fired bonemeal applied to sugar cane and cactus.
  */
 public final class DispenserListener implements Listener {
+
+    private final BoneCane plugin;
+
+    public DispenserListener(BoneCane plugin) {
+        this.plugin = plugin;
+    }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onDispense(BlockDispenseEvent event) {
@@ -36,15 +44,27 @@ public final class DispenserListener implements Listener {
         // Only the bottom block of the column may be bonemealed.
         if (!GrowthUtil.isBottomBlock(target)) return;
 
-        if (GrowthUtil.tryGrow(target)) {
-            removeOneBonemeal(dispenserBlock);
-            GrowthUtil.playBonemealEffect(target);
-        }
+        // Schedule for the next tick so that vanilla has time to restore the
+        // cancelled item back into the dispenser inventory before we remove it.
+        // Without this delay, the dispenser inventory appears empty during the
+        // event (the item was pre-removed by the server before firing), which
+        // causes the last bonemeal in a dispenser to never be consumed.
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            GrowthResult result = GrowthUtil.tryGrow(target);
+            if (result != GrowthResult.SKIPPED) {
+                removeOneBonemeal(dispenserBlock);
+                if (result == GrowthResult.GREW) {
+                    GrowthUtil.playBonemealEffect(target);
+                }
+            }
+        });
     }
 
     /**
      * Removes one bonemeal item from the dispenser's internal inventory.
-     * Called only after successful growth so bonemeal is never wasted.
+     * Always uses {@link Inventory#setItem} to avoid relying on whether the
+     * ItemStack references returned by {@link Inventory#getContents()} are
+     * live or snapshot copies.
      */
     private static void removeOneBonemeal(Block dispenserBlock) {
         if (!(dispenserBlock.getState() instanceof Dispenser dispenser)) return;
@@ -54,7 +74,9 @@ public final class DispenserListener implements Listener {
             ItemStack stack = contents[i];
             if (stack != null && stack.getType() == Material.BONE_MEAL) {
                 if (stack.getAmount() > 1) {
-                    stack.setAmount(stack.getAmount() - 1);
+                    ItemStack reduced = stack.clone();
+                    reduced.setAmount(stack.getAmount() - 1);
+                    inventory.setItem(i, reduced);
                 } else {
                     inventory.setItem(i, null);
                 }
