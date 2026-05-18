@@ -55,10 +55,10 @@ public final class GrowthUtil {
      * Applies the current config to {@link GrowthUtil}.
      * Call this from {@code onEnable} (and on config reload).
      */
-    public static void configure(GrowthMode newMode, double legacyDoubleChance, double newChanceGrow) {
+    public static void configure(GrowthMode newMode, double legacyDoubleChance, double chanceGrowProbability) {
         mode = newMode;
         doubleGrowChance = legacyDoubleChance;
-        chanceGrowChance = newChanceGrow;
+        chanceGrowChance = chanceGrowProbability;
     }
 
     /**

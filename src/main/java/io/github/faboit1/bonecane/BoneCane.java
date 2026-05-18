@@ -23,9 +23,15 @@ public final class BoneCane extends JavaPlugin {
 
     private void loadGrowthConfig() {
         String modeStr = getConfig().getString("mode", "legacy");
-        GrowthUtil.GrowthMode mode = "chance".equalsIgnoreCase(modeStr)
-                ? GrowthUtil.GrowthMode.CHANCE
-                : GrowthUtil.GrowthMode.LEGACY;
+        GrowthUtil.GrowthMode mode;
+        if ("chance".equalsIgnoreCase(modeStr)) {
+            mode = GrowthUtil.GrowthMode.CHANCE;
+        } else {
+            if (!"legacy".equalsIgnoreCase(modeStr)) {
+                getLogger().warning("Unknown growth mode '" + modeStr + "' in config.yml — defaulting to 'legacy'.");
+            }
+            mode = GrowthUtil.GrowthMode.LEGACY;
+        }
 
         double doubleChance = getConfig().getDouble("legacy.double-grow-chance", 0.10);
         double growChance = getConfig().getDouble("chance.grow-chance", 0.10);
