@@ -56,7 +56,9 @@ public final class PlayerInteractListener implements Listener {
         if (item.getAmount() > 1) {
             item.setAmount(item.getAmount() - 1);
         } else {
-            item.setType(Material.AIR);
+            // setType(AIR) on the snapshot copy returned by getItem() does not
+            // update the actual inventory slot — use the inventory API directly.
+            player.getInventory().setItemInMainHand(null);
         }
     }
 }
