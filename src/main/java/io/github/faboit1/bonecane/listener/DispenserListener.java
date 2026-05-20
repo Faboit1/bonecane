@@ -53,9 +53,7 @@ public final class DispenserListener implements Listener {
             GrowthResult result = GrowthUtil.tryGrow(target);
             if (result != GrowthResult.SKIPPED) {
                 removeOneBonemeal(dispenserBlock);
-                if (result == GrowthResult.GREW) {
-                    GrowthUtil.playBonemealEffect(target);
-                }
+                GrowthUtil.playBonemealEffect(target);
             }
         });
     }

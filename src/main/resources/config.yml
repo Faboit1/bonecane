@@ -3,6 +3,9 @@
 # chance: each bonemeal use has a percentage chance to grow the plant by 1 block
 mode: legacy
 
+# Maximum height a sugar cane or cactus column may reach (vanilla default: 3)
+max-height: 3
+
 legacy:
   # Probability (0.0 to 1.0) to grow by 2 blocks instead of 1
   double-grow-chance: 0.10

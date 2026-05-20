@@ -35,12 +35,14 @@ public final class BoneCane extends JavaPlugin {
 
         double doubleChance = getConfig().getDouble("legacy.double-grow-chance", 0.10);
         double growChance = getConfig().getDouble("chance.grow-chance", 0.10);
+        int maxHeight = getConfig().getInt("max-height", GrowthUtil.DEFAULT_MAX_HEIGHT);
 
-        GrowthUtil.configure(mode, doubleChance, growChance);
+        GrowthUtil.configure(mode, doubleChance, growChance, maxHeight);
 
         getLogger().info("Growth mode: " + mode.name().toLowerCase()
                 + (mode == GrowthUtil.GrowthMode.LEGACY
                         ? " (double-grow-chance=" + doubleChance + ")"
-                        : " (grow-chance=" + growChance + ")"));
+                        : " (grow-chance=" + growChance + ")")
+                + ", max-height=" + maxHeight);
     }
 }
