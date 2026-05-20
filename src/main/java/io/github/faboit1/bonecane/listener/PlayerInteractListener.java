@@ -44,9 +44,7 @@ public final class PlayerInteractListener implements Listener {
         if (result != GrowthResult.SKIPPED) {
             Player player = event.getPlayer();
             consumeBonemeal(player, item);
-            if (result == GrowthResult.GREW) {
-                GrowthUtil.playBonemealEffect(block);
-            }
+            GrowthUtil.playBonemealEffect(block);
         }
     }
 

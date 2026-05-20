@@ -16,7 +16,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class GrowthUtil {
 
     /** Maximum allowed stack height (vanilla max for sugar cane / cactus). */
-    public static final int MAX_HEIGHT = 3;
+    public static final int DEFAULT_MAX_HEIGHT = 3;
+
+    private static int maxHeight = DEFAULT_MAX_HEIGHT;
 
     /** Supported growth modes. */
     public enum GrowthMode {
@@ -55,10 +57,11 @@ public final class GrowthUtil {
      * Applies the current config to {@link GrowthUtil}.
      * Call this from {@code onEnable} (and on config reload).
      */
-    public static void configure(GrowthMode newMode, double legacyDoubleChance, double chanceGrowProbability) {
+    public static void configure(GrowthMode newMode, double legacyDoubleChance, double chanceGrowProbability, int newMaxHeight) {
         mode = newMode;
         doubleGrowChance = legacyDoubleChance;
         chanceGrowChance = chanceGrowProbability;
+        maxHeight = Math.max(1, newMaxHeight);
     }
 
     /**
@@ -76,12 +79,12 @@ public final class GrowthUtil {
 
     /**
      * Counts how many blocks tall the column is, starting from
-     * {@code bottomBlock} and going upward (capped at {@link #MAX_HEIGHT}).
+     * {@code bottomBlock} and going upward (capped at {@link #maxHeight}).
      */
     public static int getStackHeight(Block bottomBlock) {
         int height = 1;
         Block above = bottomBlock.getRelative(BlockFace.UP);
-        while (above.getType() == bottomBlock.getType() && height < MAX_HEIGHT) {
+        while (above.getType() == bottomBlock.getType() && height < maxHeight) {
             height++;
             above = above.getRelative(BlockFace.UP);
         }
@@ -106,7 +109,7 @@ public final class GrowthUtil {
      */
     public static GrowthResult tryGrow(Block bottomBlock) {
         int height = getStackHeight(bottomBlock);
-        if (height >= MAX_HEIGHT) {
+        if (height >= maxHeight) {
             return GrowthResult.SKIPPED;
         }
 
@@ -128,7 +131,7 @@ public final class GrowthUtil {
         }
 
         int targetGrowth = ThreadLocalRandom.current().nextDouble() < doubleGrowChance ? 2 : 1;
-        targetGrowth = Math.min(targetGrowth, MAX_HEIGHT - height);
+        targetGrowth = Math.min(targetGrowth, maxHeight - height);
 
         int placed = 0;
         for (int i = 0; i < targetGrowth; i++) {
