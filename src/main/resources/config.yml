@@ -1,0 +1,12 @@
+# Growth mode: "legacy" or "chance"
+# legacy: bonemeal always grows the plant (1 block, small chance for 2)
+# chance: each bonemeal use has a percentage chance to grow the plant by 1 block
+mode: legacy
+
+legacy:
+  # Probability (0.0 to 1.0) to grow by 2 blocks instead of 1
+  double-grow-chance: 0.10
+
+chance:
+  # Probability (0.0 to 1.0) to actually grow when bonemealing
+  grow-chance: 0.10

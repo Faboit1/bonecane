@@ -18,10 +18,48 @@ public final class GrowthUtil {
     /** Maximum allowed stack height (vanilla max for sugar cane / cactus). */
     public static final int MAX_HEIGHT = 3;
 
-    /** Probability of growing by 2 instead of 1. */
-    private static final double DOUBLE_GROW_CHANCE = 0.10;
+    /** Supported growth modes. */
+    public enum GrowthMode {
+        /**
+         * Legacy mode: bonemeal always grows the plant by 1 block
+         * (with a configurable small chance of +2).
+         */
+        LEGACY,
+        /**
+         * Chance mode: bonemeal is consumed on every use but only grows
+         * the plant with a configurable probability.
+         */
+        CHANCE
+    }
+
+    /**
+     * Result of a {@link #tryGrow} call, indicating what happened and
+     * whether bonemeal should be consumed.
+     */
+    public enum GrowthResult {
+        /** Plant is already at max height – do nothing, do not consume. */
+        SKIPPED,
+        /** Bonemeal was consumed but the plant did not grow (chance mode). */
+        CONSUMED,
+        /** Bonemeal was consumed and the plant grew. */
+        GREW
+    }
+
+    private static GrowthMode mode = GrowthMode.LEGACY;
+    private static double doubleGrowChance = 0.10;
+    private static double chanceGrowChance = 0.10;
 
     private GrowthUtil() {}
+
+    /**
+     * Applies the current config to {@link GrowthUtil}.
+     * Call this from {@code onEnable} (and on config reload).
+     */
+    public static void configure(GrowthMode newMode, double legacyDoubleChance, double chanceGrowProbability) {
+        mode = newMode;
+        doubleGrowChance = legacyDoubleChance;
+        chanceGrowChance = chanceGrowProbability;
+    }
 
     /**
      * Returns {@code true} if the given block is the BOTTOM block of a sugar
@@ -53,51 +91,79 @@ public final class GrowthUtil {
     /**
      * Attempts to grow the column whose bottom block is {@code bottomBlock}.
      *
+     * <p>Behaviour depends on the configured {@link GrowthMode}:</p>
      * <ul>
-     *   <li>Does nothing and returns {@code false} if the column is already
-     *       {@value #MAX_HEIGHT} blocks tall.</li>
-     *   <li>Grows by +1 most of the time, +2 with a
-     *       {@value #DOUBLE_GROW_CHANCE} probability – never exceeding
-     *       {@value #MAX_HEIGHT}.</li>
-     *   <li>Validates placement for cactus (air required on all four sides of
-     *       each new block).</li>
-     *   <li>Returns {@code true} only if at least one block was placed.</li>
+     *   <li><b>LEGACY</b>: always grows by 1 (small chance for +2); bonemeal
+     *       is consumed only when growth occurs.</li>
+     *   <li><b>CHANCE</b>: bonemeal is always consumed (when below max height);
+     *       the plant grows with a configurable probability.</li>
      * </ul>
+     *
+     * @return {@link GrowthResult#SKIPPED} if the column is already at max
+     *         height, {@link GrowthResult#GREW} if at least one block was
+     *         placed, or {@link GrowthResult#CONSUMED} if the bonemeal was
+     *         used but no block was placed (chance mode only).
      */
-    public static boolean tryGrow(Block bottomBlock) {
+    public static GrowthResult tryGrow(Block bottomBlock) {
         int height = getStackHeight(bottomBlock);
         if (height >= MAX_HEIGHT) {
-            return false;
+            return GrowthResult.SKIPPED;
         }
 
+        return mode == GrowthMode.CHANCE
+                ? tryGrowChance(bottomBlock, height)
+                : tryGrowLegacy(bottomBlock, height);
+    }
+
+    // -----------------------------------------------------------------------
+    // Private helpers
+    // -----------------------------------------------------------------------
+
+    private static GrowthResult tryGrowLegacy(Block bottomBlock, int height) {
         Material type = bottomBlock.getType();
 
-        // Walk to the current top block.
         Block topBlock = bottomBlock;
         for (int i = 1; i < height; i++) {
             topBlock = topBlock.getRelative(BlockFace.UP);
         }
 
-        int targetGrowth = ThreadLocalRandom.current().nextDouble() < DOUBLE_GROW_CHANCE ? 2 : 1;
+        int targetGrowth = ThreadLocalRandom.current().nextDouble() < doubleGrowChance ? 2 : 1;
         targetGrowth = Math.min(targetGrowth, MAX_HEIGHT - height);
 
         int placed = 0;
         for (int i = 0; i < targetGrowth; i++) {
             Block next = topBlock.getRelative(BlockFace.UP);
 
-            if (next.getType() != Material.AIR) {
-                break;
-            }
-            if (type == Material.CACTUS && !canPlaceCactus(next)) {
-                break;
-            }
+            if (next.getType() != Material.AIR) break;
+            if (type == Material.CACTUS && !canPlaceCactus(next)) break;
 
             next.setType(type);
             topBlock = next;
             placed++;
         }
 
-        return placed > 0;
+        return placed > 0 ? GrowthResult.GREW : GrowthResult.SKIPPED;
+    }
+
+    private static GrowthResult tryGrowChance(Block bottomBlock, int height) {
+        // Bonemeal is always consumed in chance mode (when below max height).
+        if (ThreadLocalRandom.current().nextDouble() >= chanceGrowChance) {
+            return GrowthResult.CONSUMED;
+        }
+
+        Material type = bottomBlock.getType();
+
+        Block topBlock = bottomBlock;
+        for (int i = 1; i < height; i++) {
+            topBlock = topBlock.getRelative(BlockFace.UP);
+        }
+
+        Block next = topBlock.getRelative(BlockFace.UP);
+        if (next.getType() != Material.AIR) return GrowthResult.CONSUMED;
+        if (type == Material.CACTUS && !canPlaceCactus(next)) return GrowthResult.CONSUMED;
+
+        next.setType(type);
+        return GrowthResult.GREW;
     }
 
     /**
