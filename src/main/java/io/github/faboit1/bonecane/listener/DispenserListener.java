@@ -3,6 +3,7 @@ package io.github.faboit1.bonecane.listener;
 import io.github.faboit1.bonecane.BoneCane;
 import io.github.faboit1.bonecane.util.GrowthUtil;
 import io.github.faboit1.bonecane.util.GrowthUtil.GrowthResult;
+import io.github.faboit1.bonecane.util.SchedulerUtil;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Dispenser;
@@ -49,7 +50,7 @@ public final class DispenserListener implements Listener {
         // Without this delay, the dispenser inventory appears empty during the
         // event (the item was pre-removed by the server before firing), which
         // causes the last bonemeal in a dispenser to never be consumed.
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        SchedulerUtil.runAtLocation(plugin, dispenserBlock.getLocation(), () -> {
             GrowthResult result = GrowthUtil.tryGrow(target);
             if (result != GrowthResult.SKIPPED) {
                 removeOneBonemeal(dispenserBlock);
